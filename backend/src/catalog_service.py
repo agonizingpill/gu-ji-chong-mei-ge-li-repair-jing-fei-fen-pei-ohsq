@@ -12,4 +12,6 @@ def latest_observation(db,accession_id):
     return db.scalar(select(Observation).where(Observation.accession_id==accession_id).order_by(Observation.id.desc()).limit(1))
 def reviewed_risk(db,accession_id):
     obs=latest_observation(db,accession_id)
-    return db.scalar(select(RiskAssessment).where(RiskAssessment.observation_id==obs.id,RiskAssessment.status=='reviewed').order_by(RiskAssessment.id.desc())) if obs else None
+    if not obs:return None
+    # 暂定等级（区间唯一档）必须补测为实测值并重新复核后，才能驱动开工与交接。
+    return db.scalar(select(RiskAssessment).where(RiskAssessment.observation_id==obs.id,RiskAssessment.status=='reviewed',RiskAssessment.provisional==False).order_by(RiskAssessment.id.desc()))

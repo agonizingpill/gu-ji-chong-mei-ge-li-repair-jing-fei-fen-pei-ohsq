@@ -3,11 +3,12 @@ from .models import Accession,Isolation,Cabinet,Treatment,Step,Handover,now
 from .common import get,reject,finish
 from .catalog_service import latest_observation,reviewed_risk
 def handover(db,data,user):
+    # 卷册行锁串行化补测与出柜：锁内重读最新观测，签发以当时最新登记的测量为准。
     folio=get(db,Accession,data.accession_id,True)
     obs=latest_observation(db,folio.id)
     reject(not obs or obs.mold>0 or obs.humidity>60,'霉斑未清除或含水率过高，复测合格后再交接')
     risk=reviewed_risk(db,folio.id)
-    reject(not risk or risk.approved!='low','最新病害需经主管复核为低风险')
+    reject(not risk or risk.approved!='low','最新病害需经主管复核为低风险（暂定等级须先补测复核）')
     reject(db.scalar(select(Treatment).where(Treatment.accession_id==folio.id,Treatment.status.in_(['draft','funded']))) is not None,'修复工序或经费核销未完成')
     reject(not db.scalar(select(Treatment).where(Treatment.accession_id==folio.id,Treatment.status=='completed')),'尚无完成核销的修复方案')
     isolation=db.scalar(select(Isolation).where(Isolation.accession_id==folio.id,Isolation.active==True))

@@ -20,12 +20,14 @@ class Accession(Base):
     status:Mapped[str]=mapped_column(String(20),default=FolioState.registered.value)
 class Observation(Base):
     __tablename__='observations'
-    __table_args__=(CheckConstraint('humidity >= 0 AND humidity <= 100'),CheckConstraint('holes >= 0'),CheckConstraint('mold >= 0 AND mold <= 100'))
+    __table_args__=(CheckConstraint('humidity >= 0 AND humidity <= 100'),CheckConstraint('holes >= 0'),CheckConstraint('mold >= 0 AND mold <= 100'),CheckConstraint('humidity_max IS NULL OR (humidity_max >= humidity AND humidity_max <= 100)'),CheckConstraint('mold_max IS NULL OR (mold_max >= mold AND mold_max <= 100)'))
     id:Mapped[int]=mapped_column(primary_key=True)
     accession_id:Mapped[int]=mapped_column(ForeignKey('accessions.id'))
     humidity:Mapped[float]=mapped_column(Float)
     holes:Mapped[int]=mapped_column(Integer)
     mold:Mapped[float]=mapped_column(Float)
+    humidity_max:Mapped[float|None]=mapped_column(Float,nullable=True)
+    mold_max:Mapped[float|None]=mapped_column(Float,nullable=True)
     note:Mapped[str]=mapped_column(String(300),default='')
     at:Mapped[datetime]=mapped_column(DateTime(timezone=True),default=now)
 class Cabinet(Base):
@@ -50,6 +52,8 @@ class RiskAssessment(Base):
     status:Mapped[str]=mapped_column(String(20),default='queued')
     predicted:Mapped[str|None]=mapped_column(String(20),nullable=True)
     approved:Mapped[str|None]=mapped_column(String(20),nullable=True)
+    provisional:Mapped[bool]=mapped_column(Boolean,default=False)
+    candidate_levels:Mapped[list]=mapped_column(JSON,default=list)
     review_note:Mapped[str]=mapped_column(String(200),default='')
     metrics:Mapped[dict]=mapped_column(JSON,default=dict)
     error:Mapped[str]=mapped_column(String(200),default='')
